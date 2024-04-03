@@ -216,17 +216,16 @@ class IBLT:
 		magic = struct.pack( ">I", 0x49424C54 )
 		header = struct.pack( ">IIIIII", self.m, self.key_size, self.value_size, 
 										 self.hash_key_sum_size, 0, self.k )
-		data = ""
+		data = b""
 		for cell in self.T:
 			# Count (32-bit signed int)
 			data += struct.pack( ">i", cell[0] )
 			# keySum
-			data += "".join( map( lambda n: struct.pack( ">B", n ), cell[1] ) )
+			data += b"".join( map( lambda n: struct.pack( ">B", n ), cell[1] ) )
 			# valueSum
-			data += "".join( map( lambda n: struct.pack( ">B", n ), cell[2] ) )
+			data += b"".join( map( lambda n: struct.pack( ">B", n ), cell[2] ) )
 			# hashKeySum
-			data += "".join( map( lambda n: struct.pack( ">B", n ), cell[3] ) )
-
+			data += b"".join( map( lambda n: struct.pack( ">B", n ), cell[3] ) )
 		return magic + header + data
 
 	@staticmethod
@@ -246,13 +245,13 @@ class IBLT:
 		# 4 x 7 bytes offset from magic value and header
 		offset = 28
 		for i in range( m ):
-			t.T[i][0] = struct.unpack( ">i", data[offset:offset+4])[0]
+			t.T[i][0] = struct.unpack(">i", data[offset:offset+4])[0]
 			offset += 4
-			t.T[i][1] = map( lambda c: struct.unpack( ">B", c )[0], data[offset:offset+key_size] )
+			t.T[i][1] = [data[offset+j] for j in range(key_size)]
 			offset += key_size
-			t.T[i][2] = map( lambda c: struct.unpack( ">B", c )[0], data[offset:offset+value_size] )
+			t.T[i][2] = [data[offset+j] for j in range(value_size)]
 			offset += value_size
-			t.T[i][3] = map( lambda c: struct.unpack( ">B", c )[0], data[offset:offset+hash_key_sum_size] )
+			t.T[i][3] = [data[offset+j] for j in range(hash_key_sum_size)]
 			offset += hash_key_sum_size
 
 		return t
@@ -271,20 +270,20 @@ class IBLT:
 
 	@staticmethod
 	def __dump( T ):
-		print "DUMP START::::::::::::::::::::::"
-		print "Count sum: %d" % sum( map( lambda e: e[0], T ) )
-		print "Non-empty count: %d" % len( filter( lambda e: e[0] > 0, T ) )
-		print "Below-zero sum: %d" % sum( map( lambda e: e[0], filter( lambda e: e[0] < 0, T ) ) )
-		print "Below-zero count: %d" % len( filter( lambda e: e[0] < 0, T ) )
+		print ("DUMP START::::::::::::::::::::::")
+		print ("Count sum: %d" % sum( map( lambda e: e[0], T ) ))
+		print ("Non-empty count: %d" % len( filter( lambda e: e[0] > 0, T ) ))
+		print ("Below-zero sum: %d" % sum( map( lambda e: e[0], filter( lambda e: e[0] < 0, T ) ) ))
+		print ("Below-zero count: %d" % len( filter( lambda e: e[0] < 0, T ) ))
 		for i in range( len( T ) ):
 			e = T[i]
 #			if e[0] > 0:
-			print "%d: %s" % ( i, e )
-		print "DUMP END::::::::::::::::::::::::"
+			print ("%d: %s" % ( i, e ))
+		print ("DUMP END::::::::::::::::::::::::")
 
 	@staticmethod
 	def get_key_hash( key ):
-		return hashlib.sha512( key ).digest()
+		return hashlib.sha512( key.encode('utf-8') ).hexdigest()
 
 	hash_hex_length = None
 	def __hash( self, i, value ):
@@ -294,7 +293,7 @@ class IBLT:
 			self.hash_hex_length = int( math.ceil( math.log( self.m, 2 ) / 4.0 ) )
 		if not 0 <= i < self.k:
 			raise Exception( 'Hash i must be between 0 and %d (%d)' % ( self.k, i ) )
-		return int( hashlib.sha512( str( i ) + value ).hexdigest()[:self.hash_hex_length], 16 ) % self.m
+		return int( hashlib.sha512( (str( i ) + value).encode('utf-8') ).hexdigest()[:self.hash_hex_length], 16 ) % self.m
 
 	def __sum_int_arrays( self, arr1, arr2 ):
 		assert len( arr1 ) == len( arr2 )
@@ -337,7 +336,7 @@ class IBLT:
 			return False
 
 		# Check if actual data match
-		for i in xrange( self.m ):
+		for i in range( self.m ):
 			c1, c2 = self.T[i], other.T[i]
 			if c1 != c2:
 				return False

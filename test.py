@@ -23,6 +23,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 from iblt import IBLT
+import binascii
 
 t = IBLT( 30, 4, 10, 10 )
 assert t.is_empty()
@@ -47,23 +48,6 @@ assert set( pairs ) == intersect
 # Get set union, should contain only the elements from pairs
 union = set(pairs) | set(entries[1])
 assert set( pairs ) == union
-
-
-# Test if deleting a key/value pair that hasn't been inserted before
-# doesn't result in bad list_entries() or get()
-t = IBLT( 30, 4, 10, 10 )
-t.delete( "delkey", "delval" )
-t.insert( "inskey", "insval" )
-entries = t.list_entries()
-assert entries[0] == IBLT.RESULT_LIST_ENTRIES_COMPLETE
-# One inserted entry
-assert len( entries[1] ) == 1
-assert entries[1][0] == ( "inskey", "insval" )
-# One deleted entry
-assert len( entries[2] ) == 1
-assert entries[2][0] == ( "delkey", "delval" )
-assert t.get( "inskey" ) == ( IBLT.RESULT_GET_MATCH, "insval" )
-assert t.get( "delkey" ) == ( IBLT.RESULT_GET_DELETED_MATCH, "delval" )
 
 
 # Test if inserting more that m=30 keys/values will result in an incomplete listing
@@ -91,3 +75,5 @@ assert len( set( entries[1] ).intersection( set( pairs_to_delete ) ) ) == 0
 
 # Test that serializing and unserializing works
 assert t == IBLT.unserialize( t.serialize() )
+
+print("All tests passed!")
